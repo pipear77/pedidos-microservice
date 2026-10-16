@@ -26,6 +26,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // HU11: Solo los CLIENTES pueden hacer pedidos
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders").hasRole("CLIENTE")
+
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
