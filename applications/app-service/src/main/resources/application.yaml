@@ -1,19 +1,14 @@
 server:
-  port: 8080
+  port: 8082
 spring:
   application:
     name: "pedidos"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
-  profiles:
-    include: null
   data:
     mongodb:
-      uri: "mongodb://localhost:27017/test"
+      # Apuntamos a una base de datos específica llamada pedidos_db
+      uri: "mongodb://localhost:27017/pedidos_db"
 management:
   endpoints:
     web:
@@ -25,3 +20,6 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
+jwt:
+  # Agregamos la clave secreta para que el filtro JWT pueda leerla
+  secret: "una-clave-secreta-muy-larga-y-segura-para-firmar-el-token-123456"

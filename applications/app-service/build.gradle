@@ -1,14 +1,20 @@
 apply plugin: 'org.springframework.boot'
+apply plugin: 'jacoco' // 1. Habilitamos JaCoCo
+
+jacoco {
+    toolVersion = "0.8.11"
+}
 
 dependencies {
-	implementation 'org.reactivecommons.utils:object-mapper:0.1.0'
-	implementation project(':mongo-repository')
-	testImplementation 'org.springframework:spring-web'
-	implementation project(':api-rest')
+    implementation 'org.reactivecommons.utils:object-mapper:0.1.0'
+    implementation project(':mongo-repository')
+    implementation project(':api-rest')
     implementation project(':model')
     implementation project(':usecase')
     implementation 'org.springframework.boot:spring-boot-starter'
     runtimeOnly('org.springframework.boot:spring-boot-devtools')
+
+    testImplementation 'org.springframework:spring-web'
     testImplementation 'com.tngtech.archunit:archunit:1.5.1'
     testImplementation 'tools.jackson.core:jackson-databind'
 }
@@ -19,11 +25,90 @@ tasks.register('explodedJar', Copy) {
 }
 
 jar {
-    // To disable the *-plain.jar
     enabled = false
 }
 
 bootJar {
-    // Sets output jar name
     archiveFileName = "${project.getParent().getName()}.${archiveExtension.get()}"
 }
+
+// ==========================================
+// CONFIGURACIÓN DE TESTING Y JACOCO
+// ==========================================
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+// 2. Excluimos configuraciones, DTOs y Documentos de Mongo que no llevan lógica
+def exclusions = [
+        '**/*Application*',
+        '**/config/**',
+        '**/ArchitectureTest*',
+        '**/Utils*',
+        '**/dto/**',
+        '**/entity/**',
+        '**/model/**',
+        '**/exception/**',
+        '**/helper/**',
+        '**/document/**' // Agregado para excluir los mapeos de MongoDB
+]
+
+// 3. Submódulos reales de nuestro microservicio de Pedidos
+def domainAndInfraProjects = [
+        project(':api-rest'),
+        project(':usecase'),
+        project(':mongo-repository')
+]
+
+jacocoTestReport {
+    dependsOn(domainAndInfraProjects.collect { it.tasks.withType(Test) })
+    dependsOn(tasks.withType(Test))
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    additionalSourceDirs.setFrom(files(domainAndInfraProjects.collect { it.sourceSets.main.allSource.srcDirs }))
+    additionalClassDirs.setFrom(files(domainAndInfraProjects.collect { it.sourceSets.main.output }))
+
+    def execDataFiles = domainAndInfraProjects.collect { it.file("build/jacoco/test.exec") }
+    execDataFiles.add(file("build/jacoco/test.exec"))
+    executionData.setFrom(files(execDataFiles))
+
+    afterEvaluate {
+        def allClasses = classDirectories.files + additionalClassDirs.files
+        classDirectories.setFrom(files(allClasses.collect {
+            fileTree(dir: it, exclude: exclusions)
+        }))
+        additionalClassDirs.setFrom(files())
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+
+    additionalClassDirs.setFrom(files(domainAndInfraProjects.collect { it.sourceSets.main.output }))
+
+    def execDataFiles = domainAndInfraProjects.collect { it.file("build/jacoco/test.exec") }
+    execDataFiles.add(file("build/jacoco/test.exec"))
+    executionData.setFrom(files(execDataFiles))
+
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80 // Mínimo de 80% exigido
+            }
+        }
+    }
+    afterEvaluate {
+        def allClasses = classDirectories.files + additionalClassDirs.files
+        classDirectories.setFrom(files(allClasses.collect {
+            fileTree(dir: it, exclude: exclusions)
+        }))
+        additionalClassDirs.setFrom(files())
+    }
+}
+check.dependsOn jacocoTestCoverageVerification
