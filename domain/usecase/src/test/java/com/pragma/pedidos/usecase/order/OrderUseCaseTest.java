@@ -3,6 +3,7 @@ package com.pragma.pedidos.usecase.order;
 import com.pragma.pedidos.model.order.Order;
 import com.pragma.pedidos.model.order.enums.OrderStatus;
 import com.pragma.pedidos.model.order.gateways.OrderRepository;
+import com.pragma.pedidos.model.order.gateways.SmsGateway;
 import com.pragma.pedidos.usecase.order.exception.ActiveOrderExistsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+
+
 @ExtendWith(MockitoExtension.class)
 class OrderUseCaseTest {
 
@@ -28,6 +31,8 @@ class OrderUseCaseTest {
 
     @Mock
     private com.pragma.pedidos.model.order.gateways.UserGateway userGateway;
+
+    @Mock private SmsGateway smsGateway;
 
     @Test
     void createOrder_Success_ShouldReturnSavedOrder() {
@@ -127,5 +132,34 @@ class OrderUseCaseTest {
         when(userGateway.getRestaurantIdByEmployeeId(5L)).thenReturn(2L); // Restaurante distinto
 
         assertThrows(IllegalArgumentException.class, () -> orderUseCase.assignOrder("123", 5L));
+    }
+
+    @Test
+    void markOrderAsReady_Success() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION).idChef(5L).idCliente(10L).build();
+
+        when(orderRepository.findById("123")).thenReturn(order);
+        when(orderRepository.saveOrder(any())).thenAnswer(i -> i.getArguments()[0]);
+        when(userGateway.getPhoneByUserId(10L)).thenReturn("+573000000000");
+
+        com.pragma.pedidos.model.order.Order result = orderUseCase.markOrderAsReady("123", 5L);
+
+        assertEquals(com.pragma.pedidos.model.order.enums.OrderStatus.LISTO, result.getEstado());
+        assertNotNull(result.getPinSeguridad());
+        verify(smsGateway).sendSms(eq("+573000000000"), anyString());
+    }
+
+    @Test
+    void markOrderAsReady_WrongStateOrChef_ShouldThrow() {
+        com.pragma.pedidos.model.order.Order orderWrongState = com.pragma.pedidos.model.order.Order.builder()
+                .id("1").estado(com.pragma.pedidos.model.order.enums.OrderStatus.PENDIENTE).idChef(5L).build();
+        when(orderRepository.findById("1")).thenReturn(orderWrongState);
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.markOrderAsReady("1", 5L));
+
+        com.pragma.pedidos.model.order.Order orderWrongChef = com.pragma.pedidos.model.order.Order.builder()
+                .id("2").estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION).idChef(99L).build();
+        when(orderRepository.findById("2")).thenReturn(orderWrongChef);
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.markOrderAsReady("2", 5L));
     }
 }

@@ -68,4 +68,11 @@ public class OrderController {
 
         return ResponseEntity.ok(updatedOrder);
     }
+
+    @PatchMapping("/{idOrder}/ready")
+    public ResponseEntity<com.pragma.pedidos.model.order.Order> markOrderAsReady(@PathVariable("idOrder") String idOrder) {
+        Long idEmpleadoLogueado = (Long) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getDetails();
+        com.pragma.pedidos.model.order.Order updatedOrder = orderUseCase.markOrderAsReady(idOrder, idEmpleadoLogueado);
+        return ResponseEntity.ok(updatedOrder);
+    }
 }

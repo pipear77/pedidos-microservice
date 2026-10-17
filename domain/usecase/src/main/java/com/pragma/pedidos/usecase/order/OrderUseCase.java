@@ -3,18 +3,21 @@ package com.pragma.pedidos.usecase.order;
 import com.pragma.pedidos.model.order.Order;
 import com.pragma.pedidos.model.order.enums.OrderStatus;
 import com.pragma.pedidos.model.order.gateways.OrderRepository;
+import com.pragma.pedidos.model.order.gateways.SmsGateway;
 import com.pragma.pedidos.model.order.gateways.UserGateway;
 import com.pragma.pedidos.usecase.order.exception.ActiveOrderExistsException;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 @RequiredArgsConstructor
 public class OrderUseCase {
 
     private final OrderRepository orderRepository;
     private final UserGateway userGateway;
+    private final SmsGateway smsGateway;
 
     public Order createOrder(Order order) {
         // 1. Definimos los estados que consideramos "en proceso"
@@ -79,5 +82,36 @@ public class OrderUseCase {
 
         // 5. Guardar los cambios
         return orderRepository.saveOrder(updatedOrder);
+    }
+
+    // NUEVO MÉTODO HU14
+    public Order markOrderAsReady(String idOrder, Long idEmpleado) {
+        Order order = orderRepository.findById(idOrder);
+        if (order == null) throw new IllegalArgumentException("El pedido no existe.");
+
+        if (order.getEstado() != OrderStatus.EN_PREPARACION) {
+            throw new IllegalArgumentException("El pedido debe estar en preparación para marcarse como listo.");
+        }
+        if (!order.getIdChef().equals(idEmpleado)) {
+            throw new IllegalArgumentException("No puedes modificar un pedido que no estás preparando.");
+        }
+
+        // Generar PIN de 6 dígitos
+        String pin = String.format("%06d", new Random().nextInt(999999));
+
+        Order updatedOrder = order.toBuilder()
+                .estado(OrderStatus.LISTO)
+                .pinSeguridad(pin)
+                .build();
+
+        Order savedOrder = orderRepository.saveOrder(updatedOrder);
+
+        // Notificar al cliente
+        String phone = userGateway.getPhoneByUserId(savedOrder.getIdCliente());
+        if (phone != null && !phone.isBlank()) {
+            smsGateway.sendSms(phone, "Tu pedido está listo para ser reclamado. Usa este PIN de seguridad: " + pin);
+        }
+
+        return savedOrder;
     }
 }

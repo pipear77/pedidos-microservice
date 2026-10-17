@@ -31,4 +31,14 @@ public class UserGatewayAdapter implements UserGateway {
             throw new IllegalArgumentException("No se pudo validar el restaurante del empleado en el servicio de usuarios.");
         }
     }
+
+    @Override
+    public String getPhoneByUserId(Long idUser) {
+        try {
+            UserResponseDto user = restClient.get().uri("/{id}", idUser).retrieve().body(UserResponseDto.class);
+            return user != null ? user.phone() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

@@ -23,4 +23,5 @@ public class Order {
     private Long idChef;
     private Long idRestaurante;
     private List<OrderDish> platos;
+    private String pinSeguridad; // NUEVO CAMPO HU14
 }

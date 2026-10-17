@@ -117,4 +117,19 @@ class OrderControllerTest {
         // 6. Limpiamos el contexto de seguridad
         org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
+
+    @Test
+    void markOrderAsReady_Success_ShouldReturnOk() {
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("emp@test.com", null);
+        auth.setDetails(5L);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder().estado(com.pragma.pedidos.model.order.enums.OrderStatus.LISTO).build();
+        when(orderUseCase.markOrderAsReady(anyString(), anyLong())).thenReturn(order);
+
+        org.springframework.http.ResponseEntity<com.pragma.pedidos.model.order.Order> response = orderController.markOrderAsReady("123");
+        assertEquals(org.springframework.http.HttpStatus.OK, response.getStatusCode());
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
 }
