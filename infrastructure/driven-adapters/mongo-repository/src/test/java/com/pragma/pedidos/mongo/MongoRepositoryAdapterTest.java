@@ -2,6 +2,7 @@ package com.pragma.pedidos.mongo;
 
 import com.pragma.pedidos.model.order.Order;
 import com.pragma.pedidos.model.order.enums.OrderStatus;
+import com.pragma.pedidos.mongo.adapter.MongoRepositoryAdapter;
 import com.pragma.pedidos.mongo.document.OrderDocument;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,5 +56,22 @@ class MongoRepositoryAdapterTest {
 
         assertTrue(result);
         verify(repository).existsByIdClienteAndEstadoIn(1L, statuses);
+    }
+
+    @Test
+    void findByIdRestauranteAndEstado_ShouldReturnList() {
+        com.pragma.pedidos.model.order.Order order = new com.pragma.pedidos.model.order.Order();
+        com.pragma.pedidos.mongo.document.OrderDocument document = new com.pragma.pedidos.mongo.document.OrderDocument();
+        org.springframework.data.domain.Page<com.pragma.pedidos.mongo.document.OrderDocument> page =
+                new org.springframework.data.domain.PageImpl<>(List.of(document));
+
+        when(repository.findByIdRestauranteAndEstado(eq(1L), eq(OrderStatus.PENDIENTE), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page);
+        when(mapper.map(document, com.pragma.pedidos.model.order.Order.class)).thenReturn(order);
+
+        List<com.pragma.pedidos.model.order.Order> result = adapter.findByIdRestauranteAndEstado(1L, OrderStatus.PENDIENTE, 0, 10);
+
+        assertFalse(result.isEmpty());
+        verify(repository).findByIdRestauranteAndEstado(eq(1L), eq(OrderStatus.PENDIENTE), any(org.springframework.data.domain.Pageable.class));
     }
 }

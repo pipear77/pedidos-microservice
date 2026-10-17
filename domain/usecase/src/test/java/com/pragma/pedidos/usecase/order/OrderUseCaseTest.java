@@ -26,6 +26,9 @@ class OrderUseCaseTest {
     @InjectMocks
     private OrderUseCase orderUseCase;
 
+    @Mock
+    private com.pragma.pedidos.model.order.gateways.UserGateway userGateway;
+
     @Test
     void createOrder_Success_ShouldReturnSavedOrder() {
         Order order = Order.builder().idCliente(10L).idRestaurante(1L).build();
@@ -50,5 +53,26 @@ class OrderUseCaseTest {
         assertThrows(ActiveOrderExistsException.class, () -> orderUseCase.createOrder(order));
 
         verify(orderRepository, never()).saveOrder(any());
+    }
+
+    @Test
+    void getOrdersByStatus_Success_ShouldReturnList() {
+        when(userGateway.getRestaurantIdByEmployeeId(4L)).thenReturn(1L);
+        when(orderRepository.findByIdRestauranteAndEstado(eq(1L), eq(OrderStatus.PENDIENTE), eq(0), eq(10)))
+                .thenReturn(List.of(new Order()));
+
+        List<Order> result = orderUseCase.getOrdersByStatus(4L, OrderStatus.PENDIENTE, 0, 10);
+
+        assertFalse(result.isEmpty());
+        verify(userGateway).getRestaurantIdByEmployeeId(4L);
+        verify(orderRepository).findByIdRestauranteAndEstado(1L, OrderStatus.PENDIENTE, 0, 10);
+    }
+
+    @Test
+    void getOrdersByStatus_NoRestaurant_ShouldThrowException() {
+        when(userGateway.getRestaurantIdByEmployeeId(4L)).thenReturn(null);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                orderUseCase.getOrdersByStatus(4L, OrderStatus.PENDIENTE, 0, 10));
     }
 }

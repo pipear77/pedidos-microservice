@@ -23,11 +23,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // HU11: Solo los CLIENTES pueden hacer pedidos
+                        // Rutas públicas
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+
+                        // HU11: Solo clientes crean pedidos
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders").hasRole("CLIENTE")
 
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+                        // HU12: Solo empleados ven los pedidos
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders").hasRole("EMPLEADO")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

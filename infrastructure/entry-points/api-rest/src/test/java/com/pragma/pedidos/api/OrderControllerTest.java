@@ -19,8 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -68,5 +67,19 @@ class OrderControllerTest {
         assertNotNull(response.getBody());
         assertEquals("mongo-id-123", response.getBody().getId());
         verify(orderUseCase).createOrder(any(Order.class));
+    }
+
+    @Test
+    void getOrdersByStatus_Success_ShouldReturnOk() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder().id("123").build();
+        when(orderUseCase.getOrdersByStatus(eq(4L), eq(com.pragma.pedidos.model.order.enums.OrderStatus.PENDIENTE), eq(0), eq(10)))
+                .thenReturn(List.of(order));
+
+        ResponseEntity<List<com.pragma.pedidos.model.order.Order>> response =
+                orderController.getOrdersByStatus(com.pragma.pedidos.model.order.enums.OrderStatus.PENDIENTE, 0, 10);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isEmpty());
     }
 }

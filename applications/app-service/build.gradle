@@ -52,7 +52,9 @@ def exclusions = [
         '**/model/**',
         '**/exception/**',
         '**/helper/**',
-        '**/document/**' // Agregado para excluir los mapeos de MongoDB
+        '**/document/**', // Agregado para excluir los mapeos de MongoDB
+        '**/adapter/**', // <- NUEVO: Excluye UserGatewayAdapter
+        '**/client/**'   // <- NUEVO: Excluye UserResponseDto
 ]
 
 // 3. Submódulos reales de nuestro microservicio de Pedidos

@@ -1,8 +1,9 @@
-package com.pragma.pedidos.mongo;
+package com.pragma.pedidos.mongo.adapter;
 
 import com.pragma.pedidos.model.order.Order;
 import com.pragma.pedidos.model.order.enums.OrderStatus;
 import com.pragma.pedidos.model.order.gateways.OrderRepository;
+import com.pragma.pedidos.mongo.MongoDBRepository;
 import com.pragma.pedidos.mongo.document.OrderDocument;
 import com.pragma.pedidos.mongo.helper.AdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
@@ -29,5 +30,14 @@ public class MongoRepositoryAdapter
     public boolean existsByIdClienteAndEstadoIn(Long idCliente, List<OrderStatus> estados) {
         // Llamamos al método mágico de Spring Data
         return repository.existsByIdClienteAndEstadoIn(idCliente, estados);
+    }
+
+    @Override
+    public List<Order> findByIdRestauranteAndEstado(Long idRestaurante, OrderStatus estado, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return repository.findByIdRestauranteAndEstado(idRestaurante, estado, pageable)
+                .stream()
+                .map(this::toEntity) // toEntity en AdapterOperations convierte de Document a Domain (Order)
+                .toList();
     }
 }

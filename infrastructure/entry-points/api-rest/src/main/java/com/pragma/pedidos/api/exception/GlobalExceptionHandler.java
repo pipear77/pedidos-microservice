@@ -1,6 +1,7 @@
 package com.pragma.pedidos.api.exception;
 
 import com.pragma.pedidos.usecase.order.exception.ActiveOrderExistsException;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Hidden // <-- 2. Añade esta anotación para que Swagger no intente leer esta clase
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

@@ -3,6 +3,7 @@ package com.pragma.pedidos.api;
 import com.pragma.pedidos.api.dto.OrderRequestDto;
 import com.pragma.pedidos.model.order.Order;
 import com.pragma.pedidos.model.order.OrderDish;
+import com.pragma.pedidos.model.order.enums.OrderStatus;
 import com.pragma.pedidos.usecase.order.OrderUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,5 +47,16 @@ public class OrderController {
         Order savedOrder = orderUseCase.createOrder(order);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Order>> getOrdersByStatus(
+            @RequestParam(name = "estado") OrderStatus estado,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+
+        Long idEmpleadoLogueado = (Long) SecurityContextHolder.getContext().getAuthentication().getDetails();
+        List<Order> orders = orderUseCase.getOrdersByStatus(idEmpleadoLogueado, estado, page, size);
+        return ResponseEntity.ok(orders);
     }
 }
