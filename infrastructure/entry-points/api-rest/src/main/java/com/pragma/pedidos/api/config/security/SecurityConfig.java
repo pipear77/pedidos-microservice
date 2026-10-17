@@ -32,6 +32,9 @@ public class SecurityConfig {
                         // HU12: Solo empleados ven los pedidos
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders").hasRole("EMPLEADO")
 
+                        // HU13: Empleado se asigna un pedido
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/orders/**").hasRole("EMPLEADO")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

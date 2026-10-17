@@ -82,4 +82,39 @@ class OrderControllerTest {
         assertNotNull(response.getBody());
         assertFalse(response.getBody().isEmpty());
     }
+
+    @Test
+    void assignOrder_Success_ShouldReturnOk() {
+        // 1. Objeto REAL de autenticación
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("empleado@test.com", null);
+        auth.setDetails(5L); // El ID de nuestro empleado
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+
+        // 2. Preparamos la respuesta esperada
+        String orderId = "123";
+        com.pragma.pedidos.model.order.Order updatedOrder = com.pragma.pedidos.model.order.Order.builder()
+                .id(orderId)
+                .estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION)
+                .idChef(5L)
+                .build();
+
+        // 3. ¡LA SOLUCIÓN DEFINITIVA! Usamos anyString() y anyLong() para evitar cualquier problema de strict stubbing
+        org.mockito.Mockito.when(orderUseCase.assignOrder(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyLong()
+        )).thenReturn(updatedOrder);
+
+        // 4. Ejecutamos el controlador
+        org.springframework.http.ResponseEntity<com.pragma.pedidos.model.order.Order> response =
+                orderController.assignOrder(orderId);
+
+        // 5. Validamos
+        org.junit.jupiter.api.Assertions.assertEquals(org.springframework.http.HttpStatus.OK, response.getStatusCode());
+        org.junit.jupiter.api.Assertions.assertNotNull(response.getBody());
+        org.junit.jupiter.api.Assertions.assertEquals(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION, response.getBody().getEstado());
+
+        // 6. Limpiamos el contexto de seguridad
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
 }

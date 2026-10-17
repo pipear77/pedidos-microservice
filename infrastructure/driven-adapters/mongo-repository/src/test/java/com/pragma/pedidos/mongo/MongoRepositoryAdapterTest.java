@@ -74,4 +74,28 @@ class MongoRepositoryAdapterTest {
         assertFalse(result.isEmpty());
         verify(repository).findByIdRestauranteAndEstado(eq(1L), eq(OrderStatus.PENDIENTE), any(org.springframework.data.domain.Pageable.class));
     }
+
+    @Test
+    void findById_Success_ShouldReturnOrder() {
+        String orderId = "123";
+        com.pragma.pedidos.mongo.document.OrderDocument document = new com.pragma.pedidos.mongo.document.OrderDocument();
+        com.pragma.pedidos.model.order.Order order = new com.pragma.pedidos.model.order.Order();
+
+        when(repository.findById(orderId)).thenReturn(java.util.Optional.of(document));
+        when(mapper.map(document, com.pragma.pedidos.model.order.Order.class)).thenReturn(order);
+
+        com.pragma.pedidos.model.order.Order result = adapter.findById(orderId);
+
+        assertNotNull(result);
+        verify(repository).findById(orderId);
+    }
+
+    @Test
+    void findById_NotFound_ShouldReturnNull() {
+        when(repository.findById("invalid")).thenReturn(java.util.Optional.empty());
+
+        com.pragma.pedidos.model.order.Order result = adapter.findById("invalid");
+
+        assertNull(result);
+    }
 }

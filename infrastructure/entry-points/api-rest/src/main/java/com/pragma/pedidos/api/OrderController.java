@@ -59,4 +59,13 @@ public class OrderController {
         List<Order> orders = orderUseCase.getOrdersByStatus(idEmpleadoLogueado, estado, page, size);
         return ResponseEntity.ok(orders);
     }
+
+    @PatchMapping("/{idOrder}/assign")
+    public ResponseEntity<Order> assignOrder(@PathVariable("idOrder") String idOrder) {
+        Long idEmpleadoLogueado = (Long) SecurityContextHolder.getContext().getAuthentication().getDetails();
+
+        Order updatedOrder = orderUseCase.assignOrder(idOrder, idEmpleadoLogueado);
+
+        return ResponseEntity.ok(updatedOrder);
+    }
 }

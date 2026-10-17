@@ -52,4 +52,32 @@ public class OrderUseCase {
         // 2. Retornamos la lista paginada y filtrada por estado (Criterios 1, 2 y 3)
         return orderRepository.findByIdRestauranteAndEstado(idRestaurante, estado, page, size);
     }
+
+    public Order assignOrder(String idOrder, Long idEmpleado) {
+        // 1. Buscar el pedido
+        Order order = orderRepository.findById(idOrder);
+        if (order == null) {
+            throw new IllegalArgumentException("El pedido no existe.");
+        }
+
+        // 2. Validar que el pedido esté PENDIENTE
+        if (order.getEstado() != OrderStatus.PENDIENTE) {
+            throw new IllegalArgumentException("El pedido no se encuentra en estado PENDIENTE.");
+        }
+
+        // 3. Validar que el empleado pertenece al mismo restaurante que el pedido
+        Long idRestauranteEmpleado = userGateway.getRestaurantIdByEmployeeId(idEmpleado);
+        if (!order.getIdRestaurante().equals(idRestauranteEmpleado)) {
+            throw new IllegalArgumentException("El empleado no tiene permisos para modificar pedidos de este restaurante.");
+        }
+
+        // 4. Asignar empleado (idChef) y cambiar estado (Criterio 5 y HU13)
+        Order updatedOrder = order.toBuilder()
+                .idChef(idEmpleado)
+                .estado(OrderStatus.EN_PREPARACION)
+                .build();
+
+        // 5. Guardar los cambios
+        return orderRepository.saveOrder(updatedOrder);
+    }
 }

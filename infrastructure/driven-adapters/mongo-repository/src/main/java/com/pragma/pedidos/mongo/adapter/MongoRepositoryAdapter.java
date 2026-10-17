@@ -40,4 +40,12 @@ public class MongoRepositoryAdapter
                 .map(this::toEntity) // toEntity en AdapterOperations convierte de Document a Domain (Order)
                 .toList();
     }
+
+    @Override
+    public Order findById(String idOrder) {
+        // Buscamos en BD y si existe lo mapeamos al objeto de Dominio
+        return repository.findById(idOrder)
+                .map(this::toEntity)
+                .orElse(null);
+    }
 }

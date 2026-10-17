@@ -75,4 +75,57 @@ class OrderUseCaseTest {
         assertThrows(IllegalArgumentException.class, () ->
                 orderUseCase.getOrdersByStatus(4L, OrderStatus.PENDIENTE, 0, 10));
     }
+
+    @Test
+    void assignOrder_Success_ShouldReturnUpdatedOrder() {
+        String orderId = "123";
+        Long employeeId = 5L;
+        Long restaurantId = 1L;
+        com.pragma.pedidos.model.order.Order existingOrder = com.pragma.pedidos.model.order.Order.builder()
+                .id(orderId)
+                .estado(com.pragma.pedidos.model.order.enums.OrderStatus.PENDIENTE)
+                .idRestaurante(restaurantId)
+                .build();
+
+        com.pragma.pedidos.model.order.Order updatedOrder = existingOrder.toBuilder()
+                .idChef(employeeId)
+                .estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(existingOrder);
+        when(userGateway.getRestaurantIdByEmployeeId(employeeId)).thenReturn(restaurantId);
+        when(orderRepository.saveOrder(any(com.pragma.pedidos.model.order.Order.class))).thenReturn(updatedOrder);
+
+        com.pragma.pedidos.model.order.Order result = orderUseCase.assignOrder(orderId, employeeId);
+
+        assertNotNull(result);
+        assertEquals(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION, result.getEstado());
+        assertEquals(employeeId, result.getIdChef());
+    }
+
+    @Test
+    void assignOrder_OrderNotFound_ShouldThrowException() {
+        when(orderRepository.findById("invalid")).thenReturn(null);
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.assignOrder("invalid", 5L));
+    }
+
+    @Test
+    void assignOrder_OrderNotPending_ShouldThrowException() {
+        com.pragma.pedidos.model.order.Order existingOrder = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION).build();
+        when(orderRepository.findById("123")).thenReturn(existingOrder);
+
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.assignOrder("123", 5L));
+    }
+
+    @Test
+    void assignOrder_EmployeeNotFromRestaurant_ShouldThrowException() {
+        com.pragma.pedidos.model.order.Order existingOrder = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.PENDIENTE).idRestaurante(1L).build();
+
+        when(orderRepository.findById("123")).thenReturn(existingOrder);
+        when(userGateway.getRestaurantIdByEmployeeId(5L)).thenReturn(2L); // Restaurante distinto
+
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.assignOrder("123", 5L));
+    }
 }
