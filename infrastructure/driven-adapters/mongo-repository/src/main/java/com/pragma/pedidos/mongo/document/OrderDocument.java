@@ -26,5 +26,6 @@ public class OrderDocument {
     private OrderStatus estado;
     private Long idChef;
     private Long idRestaurante;
+    private String pinSeguridad;
     private List<OrderDishDocument> platos;
 }

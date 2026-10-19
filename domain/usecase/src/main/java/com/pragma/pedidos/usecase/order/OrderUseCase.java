@@ -114,4 +114,34 @@ public class OrderUseCase {
 
         return savedOrder;
     }
+
+    // NUEVO MÉTODO HU15
+    public Order deliverOrder(String idOrder, String pinIngresado, Long idEmpleado) {
+        Order order = orderRepository.findById(idOrder);
+        if (order == null) {
+            throw new IllegalArgumentException("El pedido no existe.");
+        }
+
+        // Criterio 1 y 2: Solo pedidos LISTO pueden ser entregados
+        if (order.getEstado() != OrderStatus.LISTO) {
+            throw new IllegalArgumentException("El pedido solo puede entregarse si está en estado LISTO.");
+        }
+
+        // Validación de seguridad (opcional pero recomendada): Solo el empleado asignado lo entrega
+        if (!order.getIdChef().equals(idEmpleado)) {
+            throw new IllegalArgumentException("No tienes permisos para entregar este pedido.");
+        }
+
+        // Criterio 3: Validar el PIN de seguridad (Null-Safe)
+        if (pinIngresado == null || !pinIngresado.equals(order.getPinSeguridad())) {
+            throw new IllegalArgumentException("El PIN de seguridad es incorrecto o no ha sido generado.");
+        }
+
+        // Cambiar a estado final
+        Order updatedOrder = order.toBuilder()
+                .estado(OrderStatus.ENTREGADO)
+                .build();
+
+        return orderRepository.saveOrder(updatedOrder);
+    }
 }

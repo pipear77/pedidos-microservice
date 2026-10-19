@@ -162,4 +162,40 @@ class OrderUseCaseTest {
         when(orderRepository.findById("2")).thenReturn(orderWrongChef);
         assertThrows(IllegalArgumentException.class, () -> orderUseCase.markOrderAsReady("2", 5L));
     }
+
+    @Test
+    void deliverOrder_Success() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.LISTO)
+                .idChef(5L).pinSeguridad("123456").build();
+
+        when(orderRepository.findById("123")).thenReturn(order);
+        when(orderRepository.saveOrder(any())).thenAnswer(i -> i.getArgument(0));
+
+        com.pragma.pedidos.model.order.Order result = orderUseCase.deliverOrder("123", "123456", 5L);
+
+        assertEquals(com.pragma.pedidos.model.order.enums.OrderStatus.ENTREGADO, result.getEstado());
+    }
+
+    @Test
+    void deliverOrder_WrongPin_ShouldThrowException() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.LISTO)
+                .idChef(5L).pinSeguridad("123456").build();
+
+        when(orderRepository.findById("123")).thenReturn(order);
+
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.deliverOrder("123", "000000", 5L));
+    }
+
+    @Test
+    void deliverOrder_WrongState_ShouldThrowException() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION)
+                .idChef(5L).pinSeguridad("123456").build();
+
+        when(orderRepository.findById("123")).thenReturn(order);
+
+        assertThrows(IllegalArgumentException.class, () -> orderUseCase.deliverOrder("123", "123456", 5L));
+    }
 }

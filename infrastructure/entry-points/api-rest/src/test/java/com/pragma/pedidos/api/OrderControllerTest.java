@@ -132,4 +132,32 @@ class OrderControllerTest {
         assertEquals(org.springframework.http.HttpStatus.OK, response.getStatusCode());
         org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
+
+    @Test
+    void deliverOrder_Success_ShouldReturnOk() {
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("empleado@test.com", null);
+        auth.setDetails(5L);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String orderId = "123";
+        String pin = "123456";
+        com.pragma.pedidos.model.order.Order updatedOrder = com.pragma.pedidos.model.order.Order.builder()
+                .id(orderId).estado(com.pragma.pedidos.model.order.enums.OrderStatus.ENTREGADO).build();
+
+        // ¡LA SOLUCIÓN! Usar anyString() y anyLong() para evitar el bloqueo estricto de Mockito
+        org.mockito.Mockito.when(orderUseCase.deliverOrder(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyLong()
+        )).thenReturn(updatedOrder);
+
+        org.springframework.http.ResponseEntity<com.pragma.pedidos.model.order.Order> response =
+                orderController.deliverOrder(orderId, pin);
+
+        org.junit.jupiter.api.Assertions.assertEquals(org.springframework.http.HttpStatus.OK, response.getStatusCode());
+        org.junit.jupiter.api.Assertions.assertEquals(com.pragma.pedidos.model.order.enums.OrderStatus.ENTREGADO, response.getBody().getEstado());
+
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
 }
