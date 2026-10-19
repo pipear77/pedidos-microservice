@@ -87,4 +87,13 @@ public class OrderController {
 
         return ResponseEntity.ok(updatedOrder);
     }
+
+    @PatchMapping("/{idOrder}/cancel")
+    public ResponseEntity<java.util.Map<String, String>> cancelOrder(@PathVariable("idOrder") String idOrder) {
+        Long idClienteLogueado = (Long) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getDetails();
+
+        orderUseCase.cancelOrder(idOrder, idClienteLogueado);
+
+        return ResponseEntity.ok(java.util.Map.of("mensaje", "Pedido cancelado exitosamente"));
+    }
 }

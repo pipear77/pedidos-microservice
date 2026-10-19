@@ -160,4 +160,27 @@ class OrderControllerTest {
 
         org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
+
+    @Test
+    void cancelOrder_Success_ShouldReturnOk() {
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("cliente@test.com", null);
+        auth.setDetails(7L);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String orderId = "123";
+        com.pragma.pedidos.model.order.Order canceledOrder = com.pragma.pedidos.model.order.Order.builder()
+                .id(orderId).estado(com.pragma.pedidos.model.order.enums.OrderStatus.CANCELADO).build();
+
+        // Comodines para evitar a Mockito estricto
+        when(orderUseCase.cancelOrder(anyString(), anyLong())).thenReturn(canceledOrder);
+
+        org.springframework.http.ResponseEntity<java.util.Map<String, String>> response =
+                orderController.cancelOrder(orderId);
+
+        assertEquals(org.springframework.http.HttpStatus.OK, response.getStatusCode());
+        assertEquals("Pedido cancelado exitosamente", response.getBody().get("mensaje"));
+
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
 }

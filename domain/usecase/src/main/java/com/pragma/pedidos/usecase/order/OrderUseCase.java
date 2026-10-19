@@ -144,4 +144,28 @@ public class OrderUseCase {
 
         return orderRepository.saveOrder(updatedOrder);
     }
+
+    // NUEVO MÉTODO HU16
+    public Order cancelOrder(String idOrder, Long idClienteLogueado) {
+        Order order = orderRepository.findById(idOrder);
+        if (order == null) {
+            throw new IllegalArgumentException("El pedido no existe.");
+        }
+
+        // Seguridad: Un cliente no puede cancelar el pedido de otro cliente
+        if (!order.getIdCliente().equals(idClienteLogueado)) {
+            throw new IllegalArgumentException("No tienes permisos para cancelar este pedido.");
+        }
+
+        // Criterio 1 y 2: Solo si está PENDIENTE. Si no, lanzar mensaje exacto.
+        if (order.getEstado() != OrderStatus.PENDIENTE) {
+            throw new IllegalStateException("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse");
+        }
+
+        Order updatedOrder = order.toBuilder()
+                .estado(OrderStatus.CANCELADO)
+                .build();
+
+        return orderRepository.saveOrder(updatedOrder);
+    }
 }

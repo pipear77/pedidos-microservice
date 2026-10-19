@@ -198,4 +198,28 @@ class OrderUseCaseTest {
 
         assertThrows(IllegalArgumentException.class, () -> orderUseCase.deliverOrder("123", "123456", 5L));
     }
+
+    @Test
+    void cancelOrder_Success() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.PENDIENTE).idCliente(7L).build();
+
+        when(orderRepository.findById("123")).thenReturn(order);
+        when(orderRepository.saveOrder(any())).thenAnswer(i -> i.getArgument(0));
+
+        com.pragma.pedidos.model.order.Order result = orderUseCase.cancelOrder("123", 7L);
+
+        assertEquals(com.pragma.pedidos.model.order.enums.OrderStatus.CANCELADO, result.getEstado());
+    }
+
+    @Test
+    void cancelOrder_WrongState_ShouldThrowExceptionWithExactMessage() {
+        com.pragma.pedidos.model.order.Order order = com.pragma.pedidos.model.order.Order.builder()
+                .id("123").estado(com.pragma.pedidos.model.order.enums.OrderStatus.EN_PREPARACION).idCliente(7L).build();
+
+        when(orderRepository.findById("123")).thenReturn(order);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> orderUseCase.cancelOrder("123", 7L));
+        assertEquals("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse", exception.getMessage());
+    }
 }

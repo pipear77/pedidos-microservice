@@ -40,4 +40,18 @@ public class GlobalExceptionHandler {
         response.put("errors", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @org.springframework.web.bind.annotation.ExceptionHandler(IllegalStateException.class)
+    public org.springframework.http.ResponseEntity<java.util.Map<String, String>> handleIllegalStateException(IllegalStateException ex) {
+        return org.springframework.http.ResponseEntity
+                .status(org.springframework.http.HttpStatus.CONFLICT) // 409 Conflict es ideal para reglas de estado
+                .body(java.util.Map.of("mensaje", ex.getMessage()));
+    }
+
+    @org.springframework.web.bind.annotation.ExceptionHandler(IllegalArgumentException.class)
+    public org.springframework.http.ResponseEntity<java.util.Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return org.springframework.http.ResponseEntity
+                .status(org.springframework.http.HttpStatus.BAD_REQUEST) // 400 Bad Request
+                .body(java.util.Map.of("mensaje", ex.getMessage()));
+    }
 }

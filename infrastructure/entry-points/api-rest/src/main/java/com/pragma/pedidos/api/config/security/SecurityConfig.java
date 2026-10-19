@@ -28,11 +28,15 @@ public class SecurityConfig {
 
                         // HU11: Solo clientes crean pedidos
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders").hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasRole("CLIENTE")
 
                         // HU12: Solo empleados ven los pedidos
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders").hasRole("EMPLEADO")
 
-                        // HU13: Empleado se asigna un pedido
+                        // HU16: Cliente cancela su pedido (Ruta específica, DEBE IR ANTES del comodín)
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/orders/*/cancel").hasRole("CLIENTE")
+
+                        // HU13, HU14, HU15: Empleado modifica pedidos (Comodín general al final)
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/orders/**").hasRole("EMPLEADO")
 
                         .anyRequest().authenticated()
