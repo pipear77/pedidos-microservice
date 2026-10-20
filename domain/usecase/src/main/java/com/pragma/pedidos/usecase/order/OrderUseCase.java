@@ -5,6 +5,8 @@ import com.pragma.pedidos.model.order.enums.OrderStatus;
 import com.pragma.pedidos.model.order.gateways.OrderRepository;
 import com.pragma.pedidos.model.order.gateways.SmsGateway;
 import com.pragma.pedidos.model.order.gateways.UserGateway;
+import com.pragma.pedidos.model.traceabilitylog.TraceabilityLog;
+import com.pragma.pedidos.model.traceabilitylog.gateways.TraceabilityLogRepository;
 import com.pragma.pedidos.usecase.order.exception.ActiveOrderExistsException;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +20,8 @@ public class OrderUseCase {
     private final OrderRepository orderRepository;
     private final UserGateway userGateway;
     private final SmsGateway smsGateway;
+    // 1. Inyectamos el nuevo puerto de trazabilidad
+    private final TraceabilityLogRepository traceabilityLogRepository;
 
     public Order createOrder(Order order) {
         // 1. Definimos los estados que consideramos "en proceso"
@@ -41,10 +45,15 @@ public class OrderUseCase {
                 .build();
 
         // 4. Guardamos en la base de datos
-        return orderRepository.saveOrder(newOrder);
+        Order savedOrder = orderRepository.saveOrder(newOrder);
+
+        // 5. Disparamos el log asíncrono (sin estado anterior, nuevo estado: PENDIENTE)
+        sendLog(savedOrder.getId(), savedOrder.getIdCliente(), null, OrderStatus.PENDIENTE.name(), null);
+
+        return savedOrder;
     }
 
-    // NUEVO MÉTODO HU12
+    // MÉTODO HU12
     public List<Order> getOrdersByStatus(Long idEmpleado, OrderStatus estado, int page, int size) {
         // 1. Obtenemos el restaurante al que pertenece el empleado logueado (Criterio 4)
         Long idRestaurante = userGateway.getRestaurantIdByEmployeeId(idEmpleado);
@@ -81,10 +90,15 @@ public class OrderUseCase {
                 .build();
 
         // 5. Guardar los cambios
-        return orderRepository.saveOrder(updatedOrder);
+        Order savedOrder = orderRepository.saveOrder(updatedOrder);
+
+        // 6. Disparamos el log asíncrono
+        sendLog(savedOrder.getId(), savedOrder.getIdCliente(), OrderStatus.PENDIENTE.name(), OrderStatus.EN_PREPARACION.name(), idEmpleado);
+
+        return savedOrder;
     }
 
-    // NUEVO MÉTODO HU14
+    // MÉTODO HU14
     public Order markOrderAsReady(String idOrder, Long idEmpleado) {
         Order order = orderRepository.findById(idOrder);
         if (order == null) throw new IllegalArgumentException("El pedido no existe.");
@@ -112,10 +126,13 @@ public class OrderUseCase {
             smsGateway.sendSms(phone, "Tu pedido está listo para ser reclamado. Usa este PIN de seguridad: " + pin);
         }
 
+        // Disparamos el log asíncrono
+        sendLog(savedOrder.getId(), savedOrder.getIdCliente(), OrderStatus.EN_PREPARACION.name(), OrderStatus.LISTO.name(), idEmpleado);
+
         return savedOrder;
     }
 
-    // NUEVO MÉTODO HU15
+    // MÉTODO HU15
     public Order deliverOrder(String idOrder, String pinIngresado, Long idEmpleado) {
         Order order = orderRepository.findById(idOrder);
         if (order == null) {
@@ -142,10 +159,15 @@ public class OrderUseCase {
                 .estado(OrderStatus.ENTREGADO)
                 .build();
 
-        return orderRepository.saveOrder(updatedOrder);
+        Order savedOrder = orderRepository.saveOrder(updatedOrder);
+
+        // Disparamos el log asíncrono
+        sendLog(savedOrder.getId(), savedOrder.getIdCliente(), OrderStatus.LISTO.name(), OrderStatus.ENTREGADO.name(), idEmpleado);
+
+        return savedOrder;
     }
 
-    // NUEVO MÉTODO HU16
+    // MÉTODO HU16
     public Order cancelOrder(String idOrder, Long idClienteLogueado) {
         Order order = orderRepository.findById(idOrder);
         if (order == null) {
@@ -166,6 +188,31 @@ public class OrderUseCase {
                 .estado(OrderStatus.CANCELADO)
                 .build();
 
-        return orderRepository.saveOrder(updatedOrder);
+        Order savedOrder = orderRepository.saveOrder(updatedOrder);
+
+        // Disparamos el log asíncrono (sin empleado asignado porque lo cancela el cliente)
+        sendLog(savedOrder.getId(), savedOrder.getIdCliente(), OrderStatus.PENDIENTE.name(), OrderStatus.CANCELADO.name(), null);
+
+        return savedOrder;
+    }
+
+    // --- MÉTODO AUXILIAR PRIVADO PARA TRAZABILIDAD ---
+    private void sendLog(String orderId, Long clientId, String previousState, String newState, Long employeeId) {
+
+        // 1. Obtenemos los correos reales desde el Gateway de Usuarios
+        String clientEmail = userGateway.getEmailByUserId(clientId);
+        String empEmail = employeeId != null ? userGateway.getEmailByUserId(employeeId) : null;
+
+        TraceabilityLog log = TraceabilityLog.builder()
+                .orderId(orderId)
+                .clientId(clientId)
+                .clientEmail(clientEmail) // ¡Adiós al correo quemado!
+                .previousState(previousState)
+                .newState(newState)
+                .employeeId(employeeId)
+                .employeeEmail(empEmail)
+                .build();
+
+        traceabilityLogRepository.saveTraceabilityLog(log);
     }
 }

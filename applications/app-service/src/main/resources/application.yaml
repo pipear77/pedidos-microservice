@@ -7,7 +7,6 @@ spring:
     add-properties: false
   data:
     mongodb:
-      # Apuntamos a una base de datos específica llamada pedidos_db
       uri: "mongodb://localhost:27017/pedidos_db"
 management:
   endpoints:
@@ -18,8 +17,15 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 jwt:
-  # Agregamos la clave secreta para que el filtro JWT pueda leerla
   secret: "una-clave-secreta-muy-larga-y-segura-para-firmar-el-token-123456"
+adapter:
+  restconsumer:
+    url: "http://localhost:8080"
+  traceability:
+    url: "http://localhost:8083"

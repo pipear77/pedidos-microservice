@@ -38,6 +38,18 @@ public class UserGatewayAdapter implements UserGateway {
             UserResponseDto user = restClient.get().uri("/{id}", idUser).retrieve().body(UserResponseDto.class);
             return user != null ? user.phone() : null;
         } catch (Exception e) {
+            System.err.println("Error al obtener el teléfono del usuario " + idUser + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public String getEmailByUserId(Long userId) {
+        try {
+            UserResponseDto user = restClient.get().uri("/{id}", userId).retrieve().body(UserResponseDto.class);
+            return user != null ? user.email() : null;
+        } catch (Exception e) {
+            System.err.println("Error al obtener el correo del usuario " + userId + ": " + e.getMessage());
             return null;
         }
     }

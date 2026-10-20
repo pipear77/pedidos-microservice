@@ -6,6 +6,8 @@ jacoco {
 }
 
 dependencies {
+	implementation project(':rest-consumer')
+	implementation 'tools.jackson.core:jackson-databind'
     implementation 'org.reactivecommons.utils:object-mapper:0.1.0'
     implementation project(':mongo-repository')
     implementation project(':api-rest')
